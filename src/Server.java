@@ -9,47 +9,52 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Server {
     int serverPort = 8888;
     ServerSocket server;
-    ArrayList<ClientThread> clientThreadList;
+    ArrayList<ConnectToClientThread> connectToClientThreadList;
+    LinkedBlockingQueue<Object> messages;
     ListenThread listenThread;
     MessageHandlingThread messageHandlingThread;
-    LinkedBlockingQueue<Object> messages;
 
     public Server() {
+        connectToClientThreadList = new ArrayList<>();
+        messages = new LinkedBlockingQueue<>();
+
+        // socket initialization
         try {
-            clientThreadList = new ArrayList<>();
             server = new ServerSocket(serverPort);
             System.out.println("Server running: " + server);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // init threads and run them
+        //  init threads and run them
         listenThread = new ListenThread();
         messageHandlingThread = new MessageHandlingThread();
         listenThread.start();
         messageHandlingThread.start();
     }
 
+    /* main entrance */
     public static void main(String args[]) {
         new Server(); // run the server, the constructor would run all sub-threads.
     }
 
     /* Methods (utilities) */
     public void sendToAll(Object msg) {
-        for (ClientThread clientThread : clientThreadList) {
-            sendToOne(msg, clientThread);
+        for (ConnectToClientThread connectToClientThread : connectToClientThreadList) {
+            sendToOne(msg, connectToClientThread);
         }
     }
 
-    public void sendToOne(Object msg, ClientThread clientThread) {
-        clientThread.write(msg);
+    public void sendToOne(Object msg, ConnectToClientThread connectToClientThread) {
+        connectToClientThread.write(msg);
     }
 
     /* Subclasses */
 
     /*
      * ListenThread is in charge of establishing connections with new clients,
-     * when a new connection is established, a new ClientThread will be created and
-     * added to clientThreadList
+     * when a new connection is established, a new ConnectToClientThread will be
+     * created and
+     * added to connectToClientThreadList
      */
     class ListenThread extends Thread {
         @Override
@@ -60,9 +65,10 @@ public class Server {
                     Socket socket = server.accept();
                     System.out.println("New connection established: " + socket);
                     // create new thread to get message from the new client, and keep the loop going
-                    ClientThread curClientThread = new ClientThread(socket);
+                    ConnectToClientThread curConnectToClientThread = new ConnectToClientThread(socket);
                     // add it to threadList
-                    clientThreadList.add(curClientThread);
+                    connectToClientThreadList.add(curConnectToClientThread);
+                    curConnectToClientThread.start();
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -73,21 +79,25 @@ public class Server {
     }
 
     /*
-     * ClientThread is in charge of reading objects from A SPECIFIC client,
-     * via ObjectInputStream,
-     * and put it in Messages
+     * ConnectToClientThread is in charge of reading objects from A SPECIFIC client,
+     * via ObjectInputStream and ObjectOutputStream.
+     * 
+     * Note that ConnectToClientThread only reads objects from inputStream to
+     * messages,
+     * and provides utility to write to outputStream. The actual manipulation of
+     * messages happens in MessageHandlingThread
      */
-    class ClientThread extends Thread {
+    class ConnectToClientThread extends Thread {
 
         Socket socket;
         ObjectInputStream in;
         ObjectOutputStream out;
 
-        public ClientThread(Socket socket) throws IOException {
+        public ConnectToClientThread(Socket socket) throws IOException {
             this.socket = socket;
             try {
-                in = new ObjectInputStream(socket.getInputStream());
                 out = new ObjectOutputStream(socket.getOutputStream());
+                in = new ObjectInputStream(socket.getInputStream());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -96,14 +106,16 @@ public class Server {
 
         @Override
         public void run() {
-            while (true) {
-                try {
-                    Object object = in.readObject(); // read from client
-                    messages.put(object); // and put into messsages, manipulated in messageHandlingThread
-                } catch (Exception e) {
-                    e.printStackTrace();
+            try {
+                out.writeObject("Input your user name:\n");
+                while (true) {
+                        Object obj = in.readObject(); // read from client
+                        messages.put(obj); // and put into messsages, manipulated in messageHandlingThread
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+
         }
 
         // write to client
@@ -121,14 +133,16 @@ public class Server {
      * current version sends message to all clients regardless of its content
      */
     class MessageHandlingThread extends Thread {
-        Object message;
 
         @Override
         public void run() {
             while (true) {
                 try {
                     // blocked until there's new message
-                    message = messages.take();
+                    System.out.println("waiting for new message:");
+                    Object message = messages.take();
+                    // we can do some handling here
+                    System.out.println(message);
                     sendToAll(message);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
