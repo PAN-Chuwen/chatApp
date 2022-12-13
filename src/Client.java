@@ -1,3 +1,4 @@
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -69,6 +70,9 @@ public class Client {
                 try {
                     Object obj = in.readObject();
                     messages.put(obj);
+                } catch (EOFException e) { // client will throw EOF if we close server
+                    System.out.println("Lost connection with the server."); 
+                    break; // exit
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

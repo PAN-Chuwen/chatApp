@@ -3,6 +3,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -107,15 +108,18 @@ public class Server {
         @Override
         public void run() {
             try {
-                out.writeObject("Input your user name:\n");
+                out.writeObject("Input your user name:\n"); // tell the client to input user name
                 while (true) {
                         Object obj = in.readObject(); // read from client
                         messages.put(obj); // and put into messsages, manipulated in messageHandlingThread
                 }
+            } catch (SocketException e) {
+                System.out.println("Client disconnected.");
+            } catch (IOException e) {
+                e.printStackTrace();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
 
         // write to client
