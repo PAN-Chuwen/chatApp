@@ -16,6 +16,7 @@ public class Client {
     UserInputThread userInputThread;
 
     public Client() {
+        messages = new LinkedBlockingQueue<>();
         try {
             socket = new Socket(serverAddr, serverPort);
             System.out.println("Client: " + socket);
