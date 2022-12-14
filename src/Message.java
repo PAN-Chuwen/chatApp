@@ -29,6 +29,10 @@ public class Message implements Serializable, Comparable<Message> {
         System.out.print("(" + userName + ")" + ": " + messageContent);
     }
 
+    public void println() {
+        System.out.println("(" + userName + ")" + ": " + messageContent);
+    }
+
     /* the earliest message will be on the top of priority queue */
     @Override
     public int compareTo(Message m) {

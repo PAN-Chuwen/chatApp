@@ -96,7 +96,7 @@ public class Client {
                     // blocked until there's new message
                     Message msg = (Message) messages.take();
                     // we can do some handling here
-                    msg.print();
+                    msg.println();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

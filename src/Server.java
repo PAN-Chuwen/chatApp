@@ -110,18 +110,18 @@ public class Server {
         @Override
         public void run() {
             try {
-                out.writeObject(new Message("Server", "Input your user name:")); // tell the client to input user name
+                out.writeObject(new Message("Server", "Input your user name: ")); // tell the client to input user name
                 userName = (String) in.readObject();
+                out.writeObject(new Message("Server", "Welcome, " + userName + "! Now you're free to chat!")); // tell the client to input user name
                 while (true) {
-                    out.writeObject(new Message("Server", "Your next message:"));
                     Object obj = in.readObject(); // read from client
                     messages.put(new Message(userName, obj)); // and put into messsages, manipulated in
                                                               // messageHandlingThread
                 }
             } catch (SocketException e) {
-                System.out.println("Client disconnected.");
+                System.out.println("User " + userName + " disconnected.");
             } catch (EOFException e) {
-                System.out.println("Client disconnected.");
+                System.out.println("User " + userName + " disconnected.");
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (Exception e) {
@@ -150,10 +150,9 @@ public class Server {
             while (true) {
                 try {
                     // blocked until there's new message
-                    System.out.println("Message queue empty, waiting for more from clients.");
                     Message msg = (Message) messages.take();
                     // we can do some handling here
-                    msg.print();
+                    msg.println();
                     sendToAll(msg);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
