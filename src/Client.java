@@ -23,9 +23,9 @@ public class Client {
             System.out.println("Client: " + socket);
 
         } catch (UnknownHostException e) {
-            e.printStackTrace();
+            System.out.println("Cannot find host, please check IP address.");
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Cannot find server.");
         }
 
         connectToServerThread = new ConnectToServerThread();
@@ -94,9 +94,9 @@ public class Client {
             while (true) {
                 try {
                     // blocked until there's new message
-                    Object msg = messages.take();
+                    Message msg = (Message) messages.take();
                     // we can do some handling here
-                    System.out.println(msg);
+                    msg.print();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -110,7 +110,6 @@ public class Client {
             Scanner sc = new Scanner(System.in); // never closed
             // read input(Object) from user and send it to server
             while (true) {
-                System.out.println("input your new message:");
                 String s = sc.nextLine(); // blocked until next user input
                 sendToServer(s);
             }

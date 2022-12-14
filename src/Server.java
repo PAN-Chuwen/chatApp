@@ -1,3 +1,4 @@
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -26,7 +27,7 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //  init threads and run them
+        // init threads and run them
         listenThread = new ListenThread();
         messageHandlingThread = new MessageHandlingThread();
         listenThread.start();
@@ -80,7 +81,7 @@ public class Server {
     }
 
     /*
-     * ConnectToClientThread is in charge of reading objects from A SPECIFIC client,
+     * ConnectToClientThread is in charge of reading messages from A SPECIFIC client,
      * via ObjectInputStream and ObjectOutputStream.
      * 
      * Note that ConnectToClientThread only reads objects from inputStream to
@@ -91,6 +92,7 @@ public class Server {
     class ConnectToClientThread extends Thread {
 
         Socket socket;
+        String userName;
         ObjectInputStream in;
         ObjectOutputStream out;
 
@@ -108,12 +110,17 @@ public class Server {
         @Override
         public void run() {
             try {
-                out.writeObject("Input your user name:\n"); // tell the client to input user name
+                out.writeObject(new Message("Server", "Input your user name:")); // tell the client to input user name
+                userName = (String) in.readObject();
                 while (true) {
-                        Object obj = in.readObject(); // read from client
-                        messages.put(obj); // and put into messsages, manipulated in messageHandlingThread
+                    out.writeObject(new Message("Server", "Your next message:"));
+                    Object obj = in.readObject(); // read from client
+                    messages.put(new Message(userName, obj)); // and put into messsages, manipulated in
+                                                              // messageHandlingThread
                 }
             } catch (SocketException e) {
+                System.out.println("Client disconnected.");
+            } catch (EOFException e) {
                 System.out.println("Client disconnected.");
             } catch (IOException e) {
                 e.printStackTrace();
@@ -143,11 +150,11 @@ public class Server {
             while (true) {
                 try {
                     // blocked until there's new message
-                    System.out.println("waiting for new message:");
-                    Object message = messages.take();
+                    System.out.println("Message queue empty, waiting for more from clients.");
+                    Message msg = (Message) messages.take();
                     // we can do some handling here
-                    System.out.println(message);
-                    sendToAll(message);
+                    msg.print();
+                    sendToAll(msg);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
